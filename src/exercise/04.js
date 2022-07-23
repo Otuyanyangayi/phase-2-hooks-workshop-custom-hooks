@@ -1,23 +1,54 @@
 import { useEffect, useState } from "react";
 
+function getLocalStorageData(key) {
+  let stringifiedValue = localStorage.getItem(key)
+  try {
+    return JSON.parse(stringifiedValue)
+  } catch {}
+
+  return stringifiedValue
+}
+
+function setLocalStorageData(key, value) {
+  const stringifiedValue = JSON.stringify(value)
+  localStorage.setItem(key, stringifiedValue)
+}
+
 /* 
   the two parameters for this function are: 
   - key: the key on localStorage where we are saving this data
   - initialValue: the initial value of state
 */
-export function useLocalStorage(key, initialValue) {
+export function useLocalStorage(key, initialValue = null) {
   /* 
     ✅ in this hook, use the useState hook. For the initial value for state:
     use the value saved in localStorage OR the initialValue from the function parameters 
   */
+  const [state, setState] = useState(getLocalStorageData(key) || initialValue)
 
   /* 
    ✅ write a useEffect hook 
    in the useEffect, when state is updated, save the state to localStorage
    don't forget the dependencies array!
   */
-  useEffect(() => {});
+  useEffect(() => {
+    setLocalStorageData(key, state);
+  }, [key, state]);
 
+
+  useEffect(() => {
+    function handleStorageUpdate(event) {
+      const value = getLocalStorageData(key)
+      setState(value)
+    }
+    window.addEventListener("storage", handleStorageUpdate)
+
+    return function cleanup() {
+      window.removeEventListener("storage", handleStorageUpdate)
+    }
+  }, [key])
+
+  return [state, setState]
   /* 
    ✅ return the same interface as useState:
    an array with state and a setState function
@@ -28,7 +59,8 @@ export function useLocalStorage(key, initialValue) {
 function Form() {
   // ✅ after implementing the useLocalStorage hook, replace useState with useLocalStorage
   // don't forget to pass in both arguments (a key and an initialValue)
-  const [name, setName] = useState("");
+  const [name, setName] = useLocalStorage("name", "")
+
   console.log(name);
 
   return (
